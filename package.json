@@ -1,0 +1,67 @@
+{
+  "name": "curatarie-backend",
+  "version": "1.0.0",
+  "description": "Backend pentru aplicația CleanApp - management curățătorie",
+  "main": "dist/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "dev:watch": "nodemon",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest",
+    "clean": "rm -rf dist"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "src"
+    ],
+    "ext": "ts,json",
+    "ignore": [
+      "src/**/*.test.ts"
+    ],
+    "exec": "ts-node src/server.ts"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "typescript",
+    "cleanapp"
+  ],
+  "author": "CleanApp Team",
+  "license": "MIT",
+  "dependencies": {
+    "@types/pdfkit": "^0.13.9",
+    "bcryptjs": "^2.4.3",
+    "canvas": "^3.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "pdfkit": "^0.17.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.4",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/multer": "^1.4.7",
+    "@types/node": "^20.5.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/qrcode": "^1.5.2",
+    "jest": "^29.6.2",
+    "nodemon": "^3.0.1",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
+}
