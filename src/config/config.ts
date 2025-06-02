@@ -4,12 +4,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
-  port: process.env.PORT || 4000,
+  port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // Database
   mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/curatarie',
+    uri: 'mongodb+srv://chiril:gorbenco03@laundry.6lov0yl.mongodb.net/?retryWrites=true&w=majority&appName=Laundry',
     testUri: process.env.MONGODB_TEST_URI || 'mongodb://localhost:27017/curatarie_test'
   },
   
@@ -22,10 +22,10 @@ export const config = {
   // Email
  email: {
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
+    port:2587,
     secure: process.env.EMAIL_SECURE === 'true',
-    user: process.env.EMAIL_USER || '',
-    pass: process.env.EMAIL_PASS || '',
+    user: 'chiril.gorbenco.em@gmail.com',
+    pass: 'tgtx tkvx ttei iznu',
     from: process.env.EMAIL_FROM || 'noreply@curatarie.ro'
   },
   
