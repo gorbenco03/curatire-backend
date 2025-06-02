@@ -31,7 +31,7 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
   try {
     const decoded = jwt.verify(token, config.jwt.secret) as any;
     req.user = decoded;
-    console.log('Utilizator decodificat din token:', req.user); // Adaugă acest log
+   
     next();
   } catch (error) {
     res.status(403).json({
@@ -45,7 +45,7 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
 // Middleware pentru verificarea rolurilor
 export const requireRole = (roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    console.log('Verificare rol - Utilizator:', req.user, 'Roluri permise:', roles); // Adaugă acest log
+ 
     if (!req.user) {
       res.status(401).json({
         success: false,
