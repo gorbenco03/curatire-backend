@@ -79,151 +79,211 @@ doc.fontSize(16)
 };
 
 // Generează factură PDF
-
-
 export const generateInvoicePDF = async (order: IOrderDocument): Promise<string> => {
   return new Promise((resolve, reject) => {
     try {
-      console.log('Starting generateInvoicePDF with order:', JSON.stringify(order, null, 2));
+      console.log('🎨 Generare factura moderna pentru comanda:', order.orderNumber);
 
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50,
+        margin: 0, // Zero margin pentru control total
+        bufferPages: true
       });
 
       const fileName = `Factura_${order.orderNumber}_${Date.now()}.pdf`;
       const filePath = path.join(config.upload.path, 'temp', fileName);
 
-      console.log('Generated file path:', filePath);
-
+      // Asigura-te ca directorul temp exista
       const tempDir = path.join(config.upload.path, 'temp');
-      console.log('Checking temp directory:', tempDir);
       if (!fs.existsSync(tempDir)) {
-        console.log('Creating temp directory:', tempDir);
         fs.mkdirSync(tempDir, { recursive: true });
-      } else {
-        console.log('Temp directory already exists');
       }
 
       const stream = fs.createWriteStream(filePath);
-      console.log('Created write stream for file:', filePath);
       doc.pipe(stream);
 
-      const primaryColor = '#1c294a';
-      const accentColor = '#3494db';
-      const textColor = '#000000'; // Changed to black for all non-header text
-      const lightGray = '#f5f5f5';
-      const borderColor = '#cccccc';
+      // Paleta de culori moderna
+      const colors = {
+        primary: '#2563eb',      // Blue
+        secondary: '#1e40af',    // Darker blue
+        accent: '#3b82f6',       // Light blue
+        success: '#10b981',      // Green
+        dark: '#1f2937',         // Dark gray
+        medium: '#6b7280',       // Medium gray
+        light: '#f3f4f6',        // Light gray
+        white: '#ffffff',
+        border: '#e5e7eb',
+        background: '#f8fafc'
+      };
 
-      console.log('Registering fonts');
+      // Dimensiuni si pozitii
+      const pageWidth = doc.page.width;
+      const pageHeight = doc.page.height;
+      const margin = 40;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Inregistrare fonturi (fallback la fonturi standard daca nu gaseste custom)
       try {
         const robotoRegularPath = path.join(__dirname, 'fonts', 'Roboto-Regular.ttf');
         const robotoBoldPath = path.join(__dirname, 'fonts', 'Roboto-Bold.ttf');
-        console.log('Roboto Regular path:', robotoRegularPath);
-        console.log('Roboto Bold path:', robotoBoldPath);
-
-        if (!fs.existsSync(robotoRegularPath)) {
-          console.error('Roboto Regular font file does not exist at:', robotoRegularPath);
-          throw new Error(`Font file missing: ${robotoRegularPath}`);
+        
+        if (fs.existsSync(robotoRegularPath) && fs.existsSync(robotoBoldPath)) {
+          doc.registerFont('Roboto', robotoRegularPath);
+          doc.registerFont('Roboto-Bold', robotoBoldPath);
+          doc.font('Roboto');
+        } else {
+          // Fallback la fonturi standard
+          doc.font('Helvetica');
         }
-        if (!fs.existsSync(robotoBoldPath)) {
-          console.error('Roboto Bold font file does not exist at:', robotoBoldPath);
-          throw new Error(`Font file missing: ${robotoBoldPath}`);
-        }
-
-        doc.registerFont('Roboto', robotoRegularPath);
-        doc.registerFont('Roboto-Bold', robotoBoldPath);
-        console.log('Fonts registered successfully');
-        doc.font('Roboto');
       } catch (fontError) {
-        console.error('Error registering fonts:', fontError);
-        throw fontError;
+        console.log('📝 Folosesc fonturi standard (Helvetica)');
+        doc.font('Helvetica');
       }
 
-      console.log('Creating header');
-      const gradient = doc.linearGradient(0, 0, doc.page.width, 120);
-      gradient.stop(0, primaryColor).stop(1, '#263a66');
-      doc.rect(0, 0, doc.page.width, 120).fill(gradient);
+      // === HEADER SECTION ===
+      console.log('🎨 Creez header-ul...');
+      
+      // Background gradient pentru header
+      const gradient = doc.linearGradient(0, 0, pageWidth, 140);
+      gradient.stop(0, colors.primary).stop(0.7, colors.secondary).stop(1, colors.dark);
+      doc.rect(0, 0, pageWidth, 140).fill(gradient);
 
-      console.log('Adding logo placeholder');
-      doc.circle(70, 75, 30)
-         .lineWidth(2)
-         .strokeColor(accentColor)
-         .fillColor('white')
-         .fillAndStroke()
-         .fillColor('white')
-         .font('Roboto-Bold')
-         .fontSize(10)
-         .text('LOGO', 55, 72, { align: 'center', width: 30 });
+      // Geometric shapes pentru design modern
+      doc.circle(pageWidth - 80, -20, 60).fillOpacity(0.1).fill(colors.white);
+      doc.circle(pageWidth - 20, 40, 40).fillOpacity(0.1).fill(colors.white);
+      doc.rect(-20, 80, 100, 100).fillOpacity(0.05).fill(colors.white);
 
-      console.log('Adding company info');
-      doc.fillColor('white') // Header text remains white
-         .font('Roboto-Bold')
-         .fontSize(22)
-         .text('CURĂȚĂTORIE PROFESIONALĂ', 140, 30, { width: doc.page.width - 200 })
-         .font('Roboto')
-         .fontSize(10)
-         .text('CUI: RO12345678 | Reg. Com.: J40/1234/2024', 140, 65, { width: doc.page.width - 200 })
-         .text('Str. Curățeniei Nr. 10, București', 140, 80, { width: doc.page.width - 200 })
-         .text('Tel: 0722 123 456 | Email: contact@curatarie.ro', 140, 95, { width: doc.page.width - 200 });
+      // Logo placeholder modern
+      doc.fillOpacity(1)
+         .roundedRect(margin, 25, 80, 80, 15)
+         .fillAndStroke(colors.white, colors.accent);
 
-      console.log('Adding invoice title');
-      doc.fillColor(accentColor)
-         .font('Roboto-Bold')
+      // Logo text
+      doc.fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .fontSize(12)
+         .text('CLEAN', margin + 15, 55)
+         .fontSize(8)
+         .text('TECH', margin + 15, 75);
+
+      // Company info - elegant typography
+      doc.fillColor(colors.white)
+         .font('Helvetica-Bold')
          .fontSize(24)
-         .text('FACTURĂ FISCALĂ', doc.page.width - 250, 30, { align: 'right', width: 200 })
+         .text('CURATARE PROFESIONALA', margin + 110, 30);
+
+      doc.font('Helvetica')
+         .fontSize(11)
+         .fillOpacity(0.9)
+         .text('Servicii premium de curatare si intretinere', margin + 110, 58)
+         .fontSize(9)
+         .fillOpacity(0.8)
+         .text('Str. Curateniei Nr. 10, Bucuresti', margin + 110, 80)
+         .text('Tel: 0722 123 456  Email: contact@curatarie.ro', margin + 110, 95)
+         .text('Web: www.curatarie-profesionala.ro', margin + 110, 110);
+
+      // === INVOICE TITLE SECTION ===
+      let yPos = 170;
+      
+      // Modern invoice number badge
+      doc.fillOpacity(1)
+         .roundedRect(pageWidth - 220, yPos - 10, 180, 50, 8)
+         .fill(colors.light);
+
+      doc.fillColor(colors.dark)
+         .font('Helvetica-Bold')
+         .fontSize(20)
+         .text('FACTURA', pageWidth - 210, yPos)
+         .fontSize(12)
+         .fillColor(colors.medium)
+         .text(`#${order.orderNumber}`, pageWidth - 210, yPos + 25);
+
+      // Date si informatii
+      doc.fillColor(colors.dark)
+         .font('Helvetica')
          .fontSize(10)
-         .fillColor('white')
-         .text('Emisă conform OUG nr. 28/1999', doc.page.width - 250, 65, { align: 'right', width: 200 });
+         .text(`Data emiterii: ${new Date().toLocaleDateString('ro-RO', { 
+           year: 'numeric', 
+           month: 'long', 
+           day: 'numeric' 
+         })}`, margin, yPos + 10)
+         .text(`Serie: CRT-2024`, margin, yPos + 25)
+         .text(`CUI: RO12345678`, margin, yPos + 40);
 
-      console.log('Adding invoice details');
-      doc.roundedRect(40, 150, doc.page.width - 80, 80, 10)
-         .fillOpacity(0.1)
-         .fill(lightGray);
+      yPos += 80;
 
-      doc.fillColor(textColor) // Switch to black for non-header text
-         .font('Roboto')
-         .fontSize(11)
-         .text(`Seria: CRT`, 60, 170)
-         .text(`Număr: ${order.orderNumber}`, 60, 185)
-         .text(`Data: ${new Date().toLocaleDateString('ro-RO')}`, 60, 200);
-
-      console.log('Adding client info');
-      doc.roundedRect(40, 250, doc.page.width - 80, order.customer.email ? 100 : 85, 10)
-         .lineWidth(1)
-         .strokeColor(borderColor)
-         .stroke();
-
-      doc.fillColor(textColor)
-         .font('Roboto-Bold')
+      // === CLIENT SECTION ===
+      console.log('👤 Adaug informatii client...');
+      
+      // Client header
+      doc.fillColor(colors.primary)
+         .font('Helvetica-Bold')
          .fontSize(14)
-         .text('Către:', 60, 270)
-         .font('Roboto')
+         .text('FACTURAT CATRE', margin, yPos);
+
+      yPos += 25;
+
+      // Client card cu shadow effect
+      doc.fillOpacity(0.05)
+         .roundedRect(margin - 2, yPos + 2, contentWidth, order.customer.email ? 85 : 70, 12)
+         .fill(colors.dark); // Shadow
+
+      doc.fillOpacity(1)
+         .roundedRect(margin, yPos, contentWidth, order.customer.email ? 85 : 70, 12)
+         .fill(colors.white)
+         .stroke(colors.border);
+
+      // Client icon
+      doc.circle(margin + 25, yPos + 35, 15)
+         .fill(colors.light);
+
+      doc.fillColor(colors.primary)
+         .font('Helvetica-Bold')
+         .fontSize(12)
+         .text('C', margin + 20, yPos + 30);
+
+      // Client info
+      doc.fillColor(colors.dark)
+         .font('Helvetica-Bold')
+         .fontSize(13)
+         .text(order.customer.name, margin + 55, yPos + 20);
+
+      doc.font('Helvetica')
          .fontSize(11)
-         .text(`Nume: ${order.customer.name}`, 60, 290)
-         .text(`Telefon: ${order.customer.phone}`, 60, 305);
+         .fillColor(colors.medium)
+         .text(`Telefon: ${order.customer.phone}`, margin + 55, yPos + 40);
 
       if (order.customer.email) {
-        doc.text(`Email: ${order.customer.email}`, 60, 320);
+        doc.text(`Email: ${order.customer.email}`, margin + 55, yPos + 55);
       }
 
-      console.log('Processing items table');
-      const tableTop = order.customer.email ? 360 : 345;
-      doc.roundedRect(40, tableTop, doc.page.width - 80, 40, 5)
-         .fill(lightGray);
+      yPos += (order.customer.email ? 85 : 70) + 30;
 
-      doc.fillColor(textColor)
-         .font('Roboto-Bold')
-         .fontSize(11)
-         .text('Serviciu', 50, tableTop + 15, { width: 200 })
-         .text('Cantitate', 250, tableTop + 15, { width: 100 })
-         .text('Preț unitar', 350, tableTop + 15, { width: 100 })
-         .text('Total', 450, tableTop + 15, { width: 100 });
+      // === ITEMS TABLE ===
+      console.log('📋 Creez tabelul cu servicii...');
 
-      console.log('Grouping items:', JSON.stringify(order.items, null, 2));
-      let yPosition = tableTop + 50;
-      doc.font('Roboto');
+      // Table header
+      const tableHeaderHeight = 45;
+      
+      // Gradient pentru header tabel
+      const tableGradient = doc.linearGradient(margin, yPos, margin + contentWidth, yPos + tableHeaderHeight);
+      tableGradient.stop(0, colors.primary).stop(1, colors.secondary);
+      
+      doc.roundedRect(margin, yPos, contentWidth, tableHeaderHeight, 8)
+         .fill(tableGradient);
 
+      // Header text
+      doc.fillColor(colors.white)
+         .font('Helvetica-Bold')
+         .fontSize(12)
+         .text('SERVICIU', margin + 20, yPos + 16)
+         .text('CANT.', margin + 280, yPos + 16)
+         .text('PRET UNITAR', margin + 340, yPos + 16)
+         .text('TOTAL', margin + 450, yPos + 16);
+
+      yPos += tableHeaderHeight;
+
+      // Group items
       const groupedItems = order.items.reduce((acc, item) => {
         const key = `${item.serviceCode}_${item.unitPrice}`;
         if (!acc[key]) {
@@ -240,78 +300,179 @@ export const generateInvoicePDF = async (order: IOrderDocument): Promise<string>
         return acc;
       }, {} as Record<string, any>);
 
-      console.log('Grouped items:', JSON.stringify(groupedItems, null, 2));
-
+      // Table rows
       Object.values(groupedItems).forEach((item: any, index: number) => {
-        const y = yPosition + (index * 25);
-        console.log(`Adding item ${index + 1}:`, item);
-        if (index % 2 === 0) {
-          doc.rect(40, y - 5, doc.page.width - 80, 20).fillOpacity(0.5).fill('#f9f9f9');
+        const rowHeight = 35;
+        const isEven = index % 2 === 0;
+        
+        // Alternating row colors
+        if (isEven) {
+          doc.rect(margin, yPos, contentWidth, rowHeight)
+             .fillOpacity(0.02)
+             .fill(colors.primary);
         }
-        doc.fillColor(textColor)
-           .fillOpacity(1)
-           .text(item.serviceName, 50, y, { width: 200 })
-           .text(item.quantity.toString(), 250, y, { width: 100 })
-           .text(`${item.unitPrice.toFixed(2)} LEI`, 350, y, { width: 100 })
-           .text(`${item.totalPrice.toFixed(2)} LEI`, 450, y, { width: 100 });
+
+        // Service icon
+        doc.fillOpacity(1)
+           .circle(margin + 15, yPos + 17, 8)
+           .fill(colors.light);
+
+        doc.fillColor(colors.accent)
+           .font('Helvetica-Bold')
+           .fontSize(8)
+           .text('S', margin + 12, yPos + 14);
+
+        // Row content
+        doc.fillColor(colors.dark)
+           .font('Helvetica')
+           .fontSize(10)
+           .text(item.serviceName, margin + 35, yPos + 12, { width: 220 });
+
+        doc.font('Helvetica-Bold')
+           .fontSize(11)
+           .text(item.quantity.toString(), margin + 285, yPos + 12)
+           .text(`${item.unitPrice.toFixed(2)} LEI`, margin + 345, yPos + 12)
+           .text(`${item.totalPrice.toFixed(2)} LEI`, margin + 455, yPos + 12);
+
+        yPos += rowHeight;
       });
 
-      yPosition += Object.values(groupedItems).length * 25 + 20;
-      console.log('Adding total:', order.totalAmount);
-      doc.roundedRect(40, yPosition - 10, doc.page.width - 80, 40, 5)
-         .fill(lightGray);
+      // Table bottom border
+      doc.moveTo(margin, yPos)
+         .lineTo(margin + contentWidth, yPos)
+         .stroke(colors.border);
 
-      doc.fillColor(accentColor)
-         .font('Roboto-Bold')
-         .fontSize(14)
-         .text('TOTAL:', 350, yPosition + 5, { width: 100 })
-         .text(`${order.totalAmount.toFixed(2)} LEI`, 450, yPosition + 5, { width: 100 });
+      yPos += 20;
 
+      // === TOTAL SECTION ===
+      console.log('💰 Adaug totalul...');
+      
+      // Total background
+      const totalGradient = doc.linearGradient(margin + 250, yPos, margin + contentWidth, yPos + 60);
+      totalGradient.stop(0, colors.success).stop(1, '#059669');
+      
+      doc.roundedRect(margin + 250, yPos, contentWidth - 250, 60, 12)
+         .fill(totalGradient);
+
+      // Total text
+      doc.fillColor(colors.white)
+         .font('Helvetica-Bold')
+         .fontSize(16)
+         .text('TOTAL DE PLATA', margin + 270, yPos + 15)
+         .fontSize(22)
+         .text(`${order.totalAmount.toFixed(2)} LEI`, margin + 270, yPos + 35);
+
+      // Total badge
+      doc.circle(margin + 500, yPos + 30, 20)
+         .fillOpacity(0.2)
+         .fill(colors.white);
+
+      doc.fillColor(colors.white)
+         .font('Helvetica-Bold')
+         .fontSize(16)
+         .text('$', margin + 494, yPos + 24);
+
+      yPos += 80;
+
+      // === NOTES SECTION ===
       if (order.notes) {
-        yPosition += 60;
-        console.log('Adding notes:', order.notes);
-        doc.roundedRect(40, yPosition - 10, doc.page.width - 80, 60, 5)
-           .lineWidth(1)
-           .strokeColor(borderColor)
-           .stroke();
-        doc.fillColor(textColor)
-           .font('Roboto')
-           .fontSize(11)
-           .text('Observații:', 60, yPosition)
-           .text(order.notes, 60, yPosition + 15, { width: doc.page.width - 100 });
+        console.log('📝 Adaug observatiile...');
+        
+        doc.fillColor(colors.dark)
+           .font('Helvetica-Bold')
+           .fontSize(12)
+           .text('OBSERVATII', margin, yPos);
+
+        yPos += 20;
+
+        doc.roundedRect(margin, yPos, contentWidth, 60, 8)
+           .fill(colors.light)
+           .stroke(colors.border);
+
+        
+
+        yPos += 80;
       }
 
-      console.log('Adding footer');
-      const footerY = doc.page.height - 80;
-      doc.rect(0, footerY, doc.page.width, 80).fill(primaryColor);
-      doc.fillColor('white')
-         .font('Roboto')
+      // === FOOTER SECTION ===
+      console.log('🎯 Creez footer-ul...');
+      
+      const footerY = pageHeight - 120;
+      
+      // Footer gradient
+      const footerGradient = doc.linearGradient(0, footerY, pageWidth, pageHeight);
+      footerGradient.stop(0, colors.dark).stop(1, '#111827');
+      
+      doc.rect(0, footerY, pageWidth, 120).fill(footerGradient);
+
+      // Decorative elements
+      doc.circle(pageWidth - 50, footerY + 20, 30).fillOpacity(0.1).fill(colors.white);
+      doc.circle(50, footerY + 80, 25).fillOpacity(0.1).fill(colors.white);
+
+      // Footer content
+      doc.fillOpacity(1)
+         .fillColor(colors.white)
+         .font('Helvetica-Bold')
+         .fontSize(14)
+         .text('Va multumim pentru increderea acordata!', margin, footerY + 25, {
+           align: 'center',
+           width: contentWidth
+         });
+
+      doc.font('Helvetica')
          .fontSize(10)
-         .text('Vă mulțumim pentru încredere!', 40, footerY + 20, { align: 'center', width: doc.page.width - 80 })
-         .fontSize(9)
-         .text('Factură generată electronic și este valabilă fără semnătură și ștampilă conform legislației în vigoare.', 40, footerY + 40, { align: 'center', width: doc.page.width - 80 });
+         .fillOpacity(0.8)
+         .text('Aceasta factura a fost generata automat de sistemul nostru si este valabila conform legislatiei in vigoare.', 
+               margin, footerY + 50, {
+           align: 'center',
+           width: contentWidth,
+           lineGap: 3
+         });
 
-      console.log('Adding page border');
-      doc.lineWidth(1)
-         .strokeColor(accentColor)
-         .rect(20, 20, doc.page.width - 40, doc.page.height - 40)
-         .stroke();
+      doc.fontSize(9)
+         .fillOpacity(0.6)
+         .text(`Generat pe ${new Date().toLocaleString('ro-RO')} | Document electronic validat`, 
+               margin, footerY + 80, {
+           align: 'center',
+           width: contentWidth
+         });
 
-      console.log('Finalizing PDF document');
+      // === DESIGN ELEMENTS ===
+      
+      // Watermark subtle
+      doc.save();
+      doc.fillOpacity(0.03)
+         .font('Helvetica-Bold')
+         .fontSize(60)
+         .fillColor(colors.primary);
+      // Apply rotation around the center of the watermark
+      doc.translate(pageWidth/2, pageHeight/2);
+      doc.rotate(-15);
+      doc.text('PLATIT', -80, -30, {
+        width: 160
+      });
+      doc.restore();
+
+      // Border accent
+      doc.fillOpacity(1)
+         .rect(0, 0, 5, pageHeight).fill(colors.primary)
+         .rect(pageWidth - 5, 0, 5, pageHeight).fill(colors.primary);
+
+      console.log('✅ Finalizez documentul PDF...');
       doc.end();
 
       stream.on('finish', () => {
-        console.log('PDF generation completed, resolving with file path:', filePath);
+        console.log('🎉 Factura moderna generata cu succes:', filePath);
         resolve(filePath);
       });
 
       stream.on('error', (error) => {
-        console.error('Stream error:', error);
+        console.error('❌ Eroare la generarea PDF:', error);
         reject(error);
       });
 
     } catch (error) {
-      console.error('Error in generateInvoicePDF:', error);
+      console.error('💥 Eroare in generateInvoicePDF:', error);
       reject(error);
     }
   });

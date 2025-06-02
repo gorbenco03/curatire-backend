@@ -1,4 +1,4 @@
-// src/models/Order.ts - Fixed version
+// src/models/Order.ts - Fixed version without TypeScript errors
 import mongoose, { Schema, Document } from 'mongoose';
 import { ICustomer } from '../types';
 
@@ -118,6 +118,7 @@ export interface IOrder {
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
+  emailSent?: boolean; // Flag pentru a ști dacă email-ul a fost trimis
 }
 
 // Schema principală pentru comandă
@@ -176,6 +177,10 @@ const OrderSchema = new Schema<IOrderDocument>({
   createdBy: {
     type: String,
     required: [true, 'ID-ul utilizatorului care a creat comanda este obligatoriu']
+  },
+  emailSent: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -209,21 +214,112 @@ OrderSchema.pre('save', function(next) {
       return;
     }
 
+    // Verifică dacă comanda era deja ready înainte de această modificare
+    const wasReady = this.isModified('items') ? false : this.status === 'ready';
+    
+    console.log('🔧 Order middleware debug:', {
+      orderNumber: this.orderNumber,
+      wasReady,
+      currentStatus: this.status,
+      isModified: this.isModified('items'),
+      emailSent: this.emailSent,
+      hasEmail: !!this.customer.email,
+      customerEmail: this.customer.email
+    });
+
     const readyItems = this.items.filter(item => item.status === 'ready').length;
     const totalItems = this.items.length;
+    
+    console.log('📊 Items status:', {
+      readyItems,
+      totalItems,
+      allReady: readyItems === totalItems,
+      itemsStatus: this.items.map(item => ({ itemCode: item.itemCode, status: item.status }))
+    });
     
     if (readyItems === 0) {
       this.status = 'pending';
     } else if (readyItems === totalItems) {
       this.status = 'ready';
+      
       if (!this.readyAt) {
         this.readyAt = new Date();
+      }
+      
+      // Marchează că trebuie să trimitem email dacă:
+      // 1. Comanda nu era ready înainte
+      // 2. Nu s-a trimis deja email
+      // 3. Clientul are email
+      const shouldSendEmail = !wasReady && !this.emailSent && this.customer.email;
+      
+      console.log('📧 Email decision:', {
+        shouldSendEmail,
+        wasReady,
+        emailSent: this.emailSent,
+        hasEmail: !!this.customer.email
+      });
+      
+      if (shouldSendEmail) {
+        // Folosim o proprietate persistentă în loc de set()
+        (this as any).__shouldSendEmail = true;
+        console.log('✅ Marcată pentru trimiterea email-ului');
       }
     } else {
       this.status = 'in_progress';
     }
   }
   next();
+});
+
+// Post middleware pentru a trimite email-ul după salvare
+OrderSchema.post('save', async function(doc: IOrderDocument) {
+  console.log('📬 Post-save middleware triggered for order:', doc.orderNumber);
+  
+  // Verifică dacă trebuie să trimitem email folosind proprietatea persistentă
+  const shouldSendEmail = (doc as any).__shouldSendEmail;
+  console.log('📧 Should send email flag:', shouldSendEmail);
+  
+  if (shouldSendEmail && !doc.emailSent) {
+    try {
+      console.log(`📧 Trimitere email de notificare pentru comanda ${doc.orderNumber}...`);
+      
+      // Importă funcția doar când e necesară pentru a evita dependințele circulare
+      const { sendOrderReadyNotification } = await import('../utils/emailService');
+      
+      await sendOrderReadyNotification(doc);
+      
+      // Marchează că email-ul a fost trimis
+      await doc.updateOne({ emailSent: true }, { timestamps: false });
+      
+      // Curăță flag-ul temporar
+      delete (doc as any).__shouldSendEmail;
+      
+      console.log(`✅ Email de notificare trimis cu succes pentru comanda ${doc.orderNumber}`);
+      
+    } catch (error) {
+      console.error(`❌ Eroare la trimiterea email-ului pentru comanda ${doc.orderNumber}:`, error);
+      
+      // Log eroarea dar nu oprește procesul
+      try {
+        const { logger } = await import('../utils/logger');
+        logger.error('Eroare la trimiterea email-ului de notificare:', {
+          error: error instanceof Error ? error.message : String(error),
+          orderId: doc._id,
+          orderNumber: doc.orderNumber,
+          customerEmail: doc.customer.email
+        });
+      } catch (logError) {
+        // Fallback dacă și logger-ul nu funcționează
+        console.error('Eroare și la logging:', logError);
+      }
+    }
+  } else {
+    console.log('📧 Nu se trimite email:', {
+      shouldSendEmail,
+      emailSent: doc.emailSent,
+      hasEmail: !!doc.customer.email
+    });
+  }
 });
 
 // Interface pentru documentul Mongoose
