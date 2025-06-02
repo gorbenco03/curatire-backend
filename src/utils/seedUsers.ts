@@ -14,6 +14,15 @@ const seedUsers = [
     isActive: true
   },
   {
+    name: 'Chiril Gorbenco',
+    email: 'chiril@curatarie.ro',
+    password: 'super123',
+    role: 'super_admin',
+    location: 'Toate locațiile',
+    phone: '0749859571',
+    isActive: true
+  },
+  {
     name: 'Ana Popescu',
     email: 'admin@curatarie.ro',
     password: 'admin123',

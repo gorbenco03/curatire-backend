@@ -1,4 +1,4 @@
-// src/app.ts - Actualizat cu rutele
+// src/app.ts - Actualizat cu rutele dashboard
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,6 +10,8 @@ import { logger } from './utils/logger';
 // Import routes
 import orderRoutes from './routes/orders';
 import authRoutes from './routes/auth';
+import dashboardRoutes from './routes/dashboard'; // ✅ ADAUGĂ RUTA DASHBOARD
+
 const app = express();
 
 // Middleware de securitate
@@ -55,6 +57,8 @@ app.use('/api/v1', (req, res, next) => {
 // Rutele aplicației
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes); // ✅ ADAUGĂ RUTA DASHBOARD
+
 // Servire fișiere statice (QR codes, receipts)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -71,6 +75,13 @@ if (config.nodeEnv === 'development') {
           'GET /api/v1/orders': 'Lista comenzi cu filtrare',
           'GET /api/v1/orders/:id': 'Detalii comandă',
           'PATCH /api/v1/orders/:id/status': 'Actualizează status comandă'
+        },
+        dashboard: {
+          'GET /api/v1/dashboard/stats': 'Statistici principale',
+          'GET /api/v1/dashboard/daily-stats': 'Statistici zilnice',
+          'GET /api/v1/dashboard/popular-services': 'Servicii populare',
+          'GET /api/v1/dashboard/attention': 'Comenzi care necesită atenție',
+          'GET /api/v1/dashboard/report': 'Raport complet'
         }
       }
     });
@@ -86,7 +97,8 @@ app.use('*', (req, res) => {
       'GET /health',
       'GET /api/v1/test',
       'POST /api/v1/orders',
-      'GET /api/v1/orders'
+      'GET /api/v1/orders',
+      'GET /api/v1/dashboard/stats'
     ] : undefined
   });
 });
