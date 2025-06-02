@@ -1,4 +1,4 @@
-// src/app.ts - Actualizat cu rutele dashboard
+// src/app.ts - Actualizat cu toate rutele inclusiv users
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,7 +10,8 @@ import { logger } from './utils/logger';
 // Import routes
 import orderRoutes from './routes/orders';
 import authRoutes from './routes/auth';
-import dashboardRoutes from './routes/dashboard'; // ✅ ADAUGĂ RUTA DASHBOARD
+import dashboardRoutes from './routes/dashboard';
+import userRoutes from './routes/users'; // ✅ RUTA USERS
 
 const app = express();
 
@@ -57,7 +58,8 @@ app.use('/api/v1', (req, res, next) => {
 // Rutele aplicației
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/dashboard', dashboardRoutes); // ✅ ADAUGĂ RUTA DASHBOARD
+app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/users', userRoutes); // ✅ RUTA USERS ADĂUGATĂ
 
 // Servire fișiere statice (QR codes, receipts)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -70,18 +72,44 @@ if (config.nodeEnv === 'development') {
       message: 'API funcționează!',
       timestamp: new Date().toISOString(),
       endpoints: {
+        auth: {
+          'POST /api/v1/auth/login': 'Autentificare utilizator',
+          'POST /api/v1/auth/register': 'Înregistrare utilizator (admin only)',
+          'GET /api/v1/auth/me': 'Profil utilizator curent',
+          'PATCH /api/v1/auth/profile': 'Actualizare profil',
+          'PATCH /api/v1/auth/change-password': 'Schimbare parolă'
+        },
+        users: {
+          'GET /api/v1/users': 'Lista utilizatori (admin only)',
+          'GET /api/v1/users/stats': 'Statistici utilizatori',
+          'GET /api/v1/users/:id': 'Detalii utilizator',
+          'PUT /api/v1/users/:id': 'Actualizare utilizator',
+          'DELETE /api/v1/users/:id': 'Ștergere utilizator',
+          'PATCH /api/v1/users/:id/toggle-status': 'Toggle status activ/inactiv',
+          'PATCH /api/v1/users/:id/reset-password': 'Resetare parolă'
+        },
         orders: {
           'POST /api/v1/orders': 'Creează comandă nouă',
           'GET /api/v1/orders': 'Lista comenzi cu filtrare',
           'GET /api/v1/orders/:id': 'Detalii comandă',
-          'PATCH /api/v1/orders/:id/status': 'Actualizează status comandă'
+          'PATCH /api/v1/orders/:id/status': 'Actualizează status comandă',
+          'GET /api/v1/orders/:id/qr-pdf': 'Descarcă PDF cu QR-uri',
+          'POST /api/v1/orders/:id/invoice': 'Generează factură'
+        },
+        scanning: {
+          'POST /api/v1/orders/scan': 'Scanează articol prin QR',
+          'GET /api/v1/orders/items/:itemCode': 'Găsește articol după cod',
+          'PATCH /api/v1/orders/:id/items/:itemId/ready': 'Marchează articol ca gata',
+          'GET /api/v1/orders/scan-history': 'Istoric scanări',
+          'GET /api/v1/orders/scan-stats': 'Statistici scanare'
         },
         dashboard: {
           'GET /api/v1/dashboard/stats': 'Statistici principale',
           'GET /api/v1/dashboard/daily-stats': 'Statistici zilnice',
           'GET /api/v1/dashboard/popular-services': 'Servicii populare',
           'GET /api/v1/dashboard/attention': 'Comenzi care necesită atenție',
-          'GET /api/v1/dashboard/report': 'Raport complet'
+          'GET /api/v1/dashboard/report': 'Raport complet',
+          'GET /api/v1/dashboard/export': 'Export date (CSV/JSON)'
         }
       }
     });
@@ -96,8 +124,9 @@ app.use('*', (req, res) => {
     availableEndpoints: config.nodeEnv === 'development' ? [
       'GET /health',
       'GET /api/v1/test',
+      'POST /api/v1/auth/login',
+      'GET /api/v1/users',
       'POST /api/v1/orders',
-      'GET /api/v1/orders',
       'GET /api/v1/dashboard/stats'
     ] : undefined
   });
