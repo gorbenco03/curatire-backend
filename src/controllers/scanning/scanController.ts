@@ -42,8 +42,8 @@ export const scanByItemCode = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Validează formatul itemCode (CMD123456_1_1)
-    const itemCodePattern = /^CMD\d+_\d+_\d+$/;
+    // Validează formatul itemCode (CMD12345_1_1)
+    const itemCodePattern = /^CMD[A-Z0-9]{5}_\d+_\d+$/;
     if (!itemCodePattern.test(itemCode.trim())) {
       res.status(400).json({
         success: false,

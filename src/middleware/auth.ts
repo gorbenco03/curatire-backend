@@ -1,4 +1,4 @@
-// src/middleware/auth.ts - Versiune corectată
+// src/middleware/auth.ts - Versiune temporară pentru testare
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/config';
@@ -15,63 +15,37 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-// Middleware pentru autentificare
+// Middleware temporar pentru autentificare (pentru testare)
 export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-  try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-    console.log('🔐 Auth Header:', authHeader ? 'Present' : 'Missing');
-    console.log('🔑 Token:', token ? `${token.substring(0, 20)}...` : 'Missing');
-
-    if (!token) {
-      res.status(401).json({
-        success: false,
-        message: 'Token de acces lipsă'
-      } as ApiResponse);
-      return;
-    }
-
-    // Verifică token-ul
-    jwt.verify(token, config.jwt.secret, (err, decoded) => {
-      if (err) {
-        console.error('❌ Token verification error:', err.message);
-        res.status(403).json({
-          success: false,
-          message: 'Token invalid sau expirat'
-        } as ApiResponse);
-        return;
-      }
-
-      // Token valid - adaugă user în request
-      req.user = decoded as any;
-      console.log('✅ User authenticated:', {
-        id: req.user?.id,
-        email: req.user?.email,
-        role: req.user?.role,
-        location: req.user?.location
-      });
-      
-      next();
-    });
-  } catch (error) {
-    console.error('❌ Auth middleware error:', error);
-    res.status(500).json({
+  if (!token) {
+    res.status(401).json({
       success: false,
-      message: 'Eroare la autentificare'
+      message: 'Token de acces lipsă'
     } as ApiResponse);
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret) as any;
+    req.user = decoded;
+    console.log('Utilizator decodificat din token:', req.user); // Adaugă acest log
+    next();
+  } catch (error) {
+    res.status(403).json({
+      success: false,
+      message: 'Token invalid sau expirat'
+    } as ApiResponse);
+    return;
   }
 };
 
 // Middleware pentru verificarea rolurilor
 export const requireRole = (roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    console.log('🛡️ Checking roles:', {
-      requiredRoles: roles,
-      userRole: req.user?.role,
-      hasRole: req.user ? roles.includes(req.user.role) : false
-    });
-
+    console.log('Verificare rol - Utilizator:', req.user, 'Roluri permise:', roles); // Adaugă acest log
     if (!req.user) {
       res.status(401).json({
         success: false,
@@ -81,11 +55,6 @@ export const requireRole = (roles: string[]) => {
     }
 
     if (!roles.includes(req.user.role)) {
-      console.error('❌ Role check failed:', {
-        userRole: req.user.role,
-        requiredRoles: roles
-      });
-      
       res.status(403).json({
         success: false,
         message: 'Nu ai permisiunea să accesezi această resursă'
@@ -93,7 +62,6 @@ export const requireRole = (roles: string[]) => {
       return;
     }
 
-    console.log('✅ Role check passed');
     next();
   };
 };
